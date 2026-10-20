@@ -1,0 +1,77 @@
+# Publicación diaria de UniNexo Perú.
+#  08:00 (Perú) → genera el post del día y lo manda al Telegram del dueño con ✅ Publicar / ❌ Saltar
+#  19:00 (Perú) → si lo aprobó, lo publica en las redes conectadas
+# Perú = UTC−5. GitHub puede correr la tarea unos minutos tarde.
+name: Post diario
+
+on:
+  schedule:
+    - cron: '0 13 * * *'   # 08:00 Perú
+    - cron: '0 0 * * *'    # 19:00 Perú
+  workflow_dispatch:
+    inputs:
+      paso:
+        description: 'generar o publicar'
+        required: true
+        default: generar
+        type: choice
+        options: [generar, publicar]
+
+permissions:
+  contents: write   # para guardar el post del día y el historial en el repositorio
+
+concurrency:
+  group: post-diario
+  cancel-in-progress: false
+
+jobs:
+  generar:
+    if: github.event.schedule == '0 13 * * *' || github.event.inputs.paso == 'generar'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Fuentes con emojis
+        run: sudo apt-get update -qq && sudo apt-get install -y -qq fonts-noto-core fonts-noto-color-emoji > /dev/null
+      - run: npm install --no-audit --no-fund
+      - name: Generar el post de hoy
+        run: node generar.cjs --guardar
+      - name: Guardar en el repositorio
+        run: |
+          git config user.name "uninexo-bot"
+          git config user.email "uninexo-bot@users.noreply.github.com"
+          git add salida historial.json
+          git commit -m "Post del $(TZ=America/Lima date +%F)" || echo "Sin cambios"
+          git push
+      - name: Pedir aprobación por Telegram
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_ADMIN_CHAT_ID: ${{ secrets.TELEGRAM_ADMIN_CHAT_ID }}
+        run: node pedir-aprobacion.cjs
+
+  publicar:
+    if: github.event.schedule == '0 0 * * *' || github.event.inputs.paso == 'publicar'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Publicar si fue aprobado
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_ADMIN_CHAT_ID: ${{ secrets.TELEGRAM_ADMIN_CHAT_ID }}
+          TELEGRAM_CANAL: ${{ secrets.TELEGRAM_CANAL }}
+        run: node publicar.cjs
+      - name: Guardar el estado
+        if: always()
+        run: |
+          git config user.name "uninexo-bot"
+          git config user.email "uninexo-bot@users.noreply.github.com"
+          git add salida
+          git commit -m "Estado del post $(TZ=America/Lima date +%F)" || echo "Sin cambios"
+          git push

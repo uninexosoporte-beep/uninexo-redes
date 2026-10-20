@@ -1,0 +1,5 @@
+node_modules/
+vistas/
+.env
+*.log
+salida/**/_tmp.html

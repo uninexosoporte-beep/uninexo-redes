@@ -1,0 +1,12 @@
+{
+  "name": "uninexo-redes",
+  "private": true,
+  "description": "Generador de publicaciones diarias de UniNexo Perú (uninexo.link)",
+  "scripts": {
+    "generar": "node generar.cjs",
+    "semana": "node generar.cjs --semana"
+  },
+  "dependencies": {
+    "puppeteer": "23.11.1"
+  }
+}

@@ -1,9 +1,10 @@
 // Publica el post del día SOLO si el dueño tocó «✅ Publicar» en Telegram (botón de pedir-aprobacion.cjs).
-// Redes activas: las que tengan sus secretos configurados. Hoy: canal de Telegram. Meta (Instagram/Facebook/Threads) se suma después.
+// Redes activas: las que tengan sus secretos configurados. Canal de Telegram, Instagram y página de Facebook.
 // Uso: node publicar.cjs [--fecha=AAAA-MM-DD]
 const fs = require('fs');
 const path = require('path');
 const { enviarAlbum, enviarTexto, leerRespuestas, responderBoton } = require('./telegram.cjs');
+const { metaConfigurado, publicarEnMeta } = require('./meta.cjs');
 
 const arg = process.argv.find((a) => a.startsWith('--fecha='));
 const fecha = arg ? arg.split('=')[1] : new Date(Date.now() - 5 * 3600e3).toISOString().slice(0, 10);
@@ -45,7 +46,12 @@ const admin = String(process.env.TELEGRAM_ADMIN_CHAT_ID || '');
     try { await enviarAlbum(process.env.TELEGRAM_CANAL, carpeta, post.imagenes, post.textos.telegram); hechos.push('Telegram'); }
     catch (e) { fallos.push(`Telegram: ${e.message}`); }
   }
-  // 2) Instagram, Facebook y Threads: se agregan cuando estén los secretos de Meta (META_*)
+  // 2) Instagram y página de Facebook (si están los secretos META_*)
+  if (metaConfigurado()) {
+    const r = await publicarEnMeta(fecha, post);
+    hechos.push(...r.hechos);
+    fallos.push(...r.fallos);
+  }
 
   post.estado = hechos.length ? 'publicado' : 'error';
   post.publicadoEn = hechos;

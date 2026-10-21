@@ -15,7 +15,7 @@ on:
         required: true
         default: generar
         type: choice
-        options: [generar, publicar]
+        options: [generar, publicar, comprobar-meta]
 
 permissions:
   contents: write   # para guardar el post del día y el historial en el repositorio
@@ -66,6 +66,9 @@ jobs:
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           TELEGRAM_ADMIN_CHAT_ID: ${{ secrets.TELEGRAM_ADMIN_CHAT_ID }}
           TELEGRAM_CANAL: ${{ secrets.TELEGRAM_CANAL }}
+          META_PAGE_TOKEN: ${{ secrets.META_PAGE_TOKEN }}
+          META_PAGE_ID: ${{ secrets.META_PAGE_ID }}
+          META_IG_USER_ID: ${{ secrets.META_IG_USER_ID }}
         run: node publicar.cjs
       - name: Guardar el estado
         if: always()
@@ -75,3 +78,19 @@ jobs:
           git add salida
           git commit -m "Estado del post $(TZ=America/Lima date +%F)" || echo "Sin cambios"
           git push
+
+  comprobar-meta:
+    if: github.event.inputs.paso == 'comprobar-meta'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Revisar la conexión con Instagram y Facebook (no publica nada)
+        env:
+          META_PAGE_TOKEN: ${{ secrets.META_PAGE_TOKEN }}
+          META_PAGE_ID: ${{ secrets.META_PAGE_ID }}
+          META_IG_USER_ID: ${{ secrets.META_IG_USER_ID }}
+        run: node meta.cjs --comprobar

@@ -22,6 +22,12 @@ Genera cada día un carrusel con **datos reales** de [uninexo.link](https://unin
 | `TELEGRAM_BOT_TOKEN` | Token del bot (de @BotFather) |
 | `TELEGRAM_ADMIN_CHAT_ID` | Tu id de Telegram (solo tus respuestas cuentan) |
 | `TELEGRAM_CANAL` | Canal donde se publica, p. ej. `@uninexoperu` |
+| `META_PAGE_TOKEN` | Token de la página de Facebook (de larga duración) con permisos para publicar en la página y en Instagram |
+| `META_PAGE_ID` | Id de la página de Facebook «UniNexo Perú» |
+| `META_IG_USER_ID` | Id de la cuenta profesional de Instagram conectada a esa página |
+
+Para revisar la conexión con Meta sin publicar: Actions → Post diario → Run workflow → `comprobar-meta`.
+Si falta un secreto de Meta, esa red simplemente se salta.
 
 Nunca escribas un token en el código ni en un commit.
 
